@@ -17,6 +17,7 @@ class Ahorcado:
     userInput: str
     message: str
 
+    wordList: List[str]
     word: str
     mask: List[bool]
 
@@ -70,7 +71,7 @@ class Ahorcado:
             - filename (str): Path al fichero .csv
 
         Returns:
-            - str: Palabra escogida
+            - List[str]: lista de palabras
 
         Raises:
             - FileNotFoundError:
@@ -93,40 +94,14 @@ class Ahorcado:
             line[:line.index(',')] if ',' in line else line
             for line in lines]
 
-        # Espacios sobrantes a izquierda y minusculas
-        words = [w.lstrip().lower() for w in words]
+        # Espacios sobrantes a los lados y minusculas
+        words = [w.strip().lower() for w in words]
 
         words = [  # Primera palabra, por si hubiera mas de una
-            word[:word.index(' ')] if ' ' in word else words
+            word[:word.index(' ')] if ' ' in word else word
             for word in words]
 
         return [w for w in words if len(w) >= Ahorcado.WORD_MIN_LEN]
-
-    def chooseWordFromFile(filename: str) -> str:
-        '''
-        Lee un fichero .csv y elige una palabra aleatoria de entre
-        las que contenga.
-
-        Args:
-            - filename (str): Path al fichero .csv
-
-        Returns:
-            - str: Palabra escogida
-
-        Raises:
-            - FileNotFoundError:
-                - Si no se encuentra el fichero
-            - ValueError:
-                - Si el formato del fichero no es correcto o no hay ninguna
-                palabra
-        '''
-        words = Ahorcado.readWordsFromFile(filename)
-
-        if not words:
-            raise ValueError(
-                f'No se ha encontrado ninguna palbra en el fichero {filename}')
-
-        return choice(words)
 
     def __init__(
             self, filename: Optional[str] = None,
@@ -153,20 +128,23 @@ class Ahorcado:
         self.nErrors = 0
 
         if filename is not None:
-            self.word = Ahorcado.chooseWordFromFile(filename)
+            wordList = Ahorcado.readWordsFromFile(filename)
         elif wordList is not None:
-            if not wordList:
-                raise ValueError('wordList no puede estar vacia')
-            self.word = choice(wordList)
+            wordList = [
+                w.lower() for w in wordList
+                if len(w) >= Ahorcado.WORD_MIN_LEN]
         else:
             raise ValueError(
                 'Al menos uno de los argumentos (filename, wordList) '
                 'debe estar presente')
 
-        if not self.word:
-            raise ValueError('No se permiten palabras vacias')
+        if not wordList:
+            raise ValueError('La lista de palabras está vacia')
 
-        self.mask = [False] * len(self.word)
+        self.wordList = wordList
+
+        self.word = ''
+        self.mask = []
 
         self.prevTries = set()
 
@@ -183,10 +161,15 @@ class Ahorcado:
         try:
             self.login()
 
-            for _ in range(Ahorcado.TOTAL_ROUNDS):
+            for round in range(Ahorcado.TOTAL_ROUNDS):
                 self.round()
+                if self.userExit:
+                    break
         except KeyboardInterrupt:
             print(' > Partida finalizada')
+
+        if self.userExit:
+            print(' > Partida finalizada por el usuario ')
 
     def login(self):
 
@@ -204,6 +187,8 @@ class Ahorcado:
 
     def round(self):
 
+        self.chooseWord()
+
         while not self.finnished():
 
             self.show()
@@ -211,6 +196,11 @@ class Ahorcado:
             self.input()
 
             self.update()
+
+    def chooseWord(self):
+        self.word = choice(self.wordList)
+        self.wordList.remove(self.word)  # Para evitar repeticiones
+        self.mask = [False] * len(self.word)
 
     def finnished(self) -> bool:
         return self.won or self.nErrors >= Ahorcado.MAX_ERRORS or self.userExit
