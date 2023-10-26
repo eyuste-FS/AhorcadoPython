@@ -22,6 +22,8 @@ class Ahorcado:
 
     won: bool
 
+    message: str
+
     TEMPLATE = (
         "\t┌──────┐      \n"
         "\t│      {}     \n"
@@ -47,8 +49,10 @@ class Ahorcado:
             - str: Palabra escogida
 
         Raises:
-            - FileNotFoundError: si no se encuentra el fichero
-            - ValueError: si el formato del fichero no es correcto
+            - FileNotFoundError:
+                - Si no se encuentra el fichero
+            - ValueError:
+                - Si el formato del fichero no es correcto
         '''
 
         if not filename.endswith('.csv'):
@@ -86,9 +90,11 @@ class Ahorcado:
             - str: Palabra escogida
 
         Raises:
-            - FileNotFoundError: si no se encuentra el fichero
-            - ValueError: si el formato del fichero no es correcto o no hay
-            ninguna palabra
+            - FileNotFoundError:
+                - Si no se encuentra el fichero
+            - ValueError:
+                - Si el formato del fichero no es correcto o no hay ninguna
+                palabra
         '''
         words = Ahorcado.readWordsFromFile(filename)
 
@@ -111,9 +117,13 @@ class Ahorcado:
             - wordList: Listado de palabras del que escoger
 
         Raises:
-            - ValueError: Si ambos argumentos están ausentes o si el formato
-            del fichero no es correcto
-            - FileNotFoundError: si no se encuentra el fichero
+            - ValueError:
+                - Si ambos argumentos están ausentes
+                - Si el formato del fichero no es correcto
+                - Si wordList es una lista vacia
+                - Si la palabra seleccionada tiene longitud = 0
+            - FileNotFoundError:
+                - Si no se encuentra el fichero
         '''
 
         self.nErrors = 0
@@ -121,17 +131,24 @@ class Ahorcado:
         if filename is not None:
             self.word = Ahorcado.chooseWordFromFile(filename)
         elif wordList is not None:
+            if not wordList:
+                raise ValueError('wordList no puede estar vacia')
             self.word = choice(wordList)
         else:
             raise ValueError(
                 'Al menos uno de los argumentos (filename, wordList) '
                 'debe estar presente')
 
+        if not self.word:
+            raise ValueError('No se permiten palabras vacias')
+
         self.mask = [False] * len(self.word)
 
         self.prevTries = set()
 
         self.won = False
+
+        self.message = ''
 
     def gameloop(self):
 
@@ -145,6 +162,17 @@ class Ahorcado:
 
             # Update
             self.update(userInput)
+
+    def show(self):
+        '''
+        Imprime la interfaz de usuario con el estado actual del juego
+        por la terminal
+        '''
+        print('\n' * 10)
+        print(str(self))
+        if self.message:
+            print(' >', self.message)
+            self.message = ''
 
     def __str__(self) -> str:
 
@@ -174,10 +202,6 @@ class Ahorcado:
         return (
             f'{self.__class__.__name__}({self.word=}, {self.nErrors=}, '
             f'{self.won=}, {self.prevTries=})')
-
-    def show(self):
-        print('\n' * 10)
-        print(str(self))
 
 
 if __name__ == '__main__':
