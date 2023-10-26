@@ -1,5 +1,5 @@
 
-from typing import List, Optional, Set
+from typing import List, Optional
 import logging
 from random import choice
 from os.path import isfile
@@ -22,18 +22,21 @@ class Ahorcado:
     mask: List[bool]
 
     nErrors: int
-    prevTries: Set[str]
+    prevTries: List[str]
 
     won: bool
+    puntuacion: int
     userExit: bool
 
-    TEMPLATE = (
-        "\t┌──────┐      \n"
-        "\t│      {}     \n"
-        "\t│     {}{}{}  \n"
-        "\t│     {} {}   \n"
-        "\t│             \n"
-        "\t┴──────────   \n")
+    TEMPLATE = '\n\t'.join((
+        "",
+        "┌──────┐      ",
+        "│      {}     ",
+        "│     {}{}{}  ",
+        "│     {} {}   ",
+        "│             ",
+        "┴──────────   ",
+    ))
 
     # Cabeza, BrazoI, Torso, BrazoD, PiernaI, PiernaD
     BODY_PIECES = 'O─│─/\\'
@@ -49,6 +52,7 @@ class Ahorcado:
 
     HELP_CMDS = {'help', 'ayuda'}
     HELP_MSG = '\n >   '.join((
+        "",
         "Help:",
         "Introduce una letra a la vez para comprobar si está en la palabra.",
         f"Las palabras posibles tienen al menos {WORD_MIN_LEN} letras y "
@@ -61,6 +65,7 @@ class Ahorcado:
         "",
         "Para salir utiliza uno de los siguientes comandos:",
         *(f'\t- {ec}' for ec in EXIT_CMDS),
+        "",
     ))
 
     def readWordsFromFile(filename: str) -> List[str]:
@@ -125,8 +130,6 @@ class Ahorcado:
                 - Si no se encuentra el fichero
         '''
 
-        self.nErrors = 0
-
         if filename is not None:
             wordList = Ahorcado.readWordsFromFile(filename)
         elif wordList is not None:
@@ -146,9 +149,11 @@ class Ahorcado:
         self.word = ''
         self.mask = []
 
-        self.prevTries = set()
+        self.prevTries = []
 
+        self.nErrors = 0
         self.won = False
+        self.puntuacion = 0
 
         self.message = ''
 
@@ -158,18 +163,44 @@ class Ahorcado:
 
     def gameloop(self):
 
+        Ahorcado.help()
+
         try:
             self.login()
 
-            for round in range(Ahorcado.TOTAL_ROUNDS):
+            for round in range(1, Ahorcado.TOTAL_ROUNDS + 1):
                 self.round()
                 if self.userExit:
                     break
+
+                if self.won:
+                    self.puntuacion += 1
+                    print('\n > ', self.message)
+                elif not self.userExit and self.nErrors >= Ahorcado.MAX_ERRORS:
+                    print('\n > ', self.message)
+
+                if round < Ahorcado.TOTAL_ROUNDS:
+                    input(
+                        f'\n > Pulsa ENTER para pasar a la {round + 1}º ronda')
+
         except KeyboardInterrupt:
             print(' > Partida finalizada')
 
         if self.userExit:
             print(' > Partida finalizada por el usuario ')
+        else:
+            prop = self.puntuacion / Ahorcado.TOTAL_ROUNDS
+            extraMsg = (
+                'Otra vez será'
+                if prop < 0.1 else (
+                    '' if prop < 0.6 else (
+                        '¡Bien hecho!' if prop < 1 else
+                        '¡Puntuación perfecta!')))
+
+            print(
+                '\n > Puntuación final: '
+                f'{self.puntuacion}/{Ahorcado.TOTAL_ROUNDS}.',
+                extraMsg)
 
     def login(self):
 
@@ -187,6 +218,10 @@ class Ahorcado:
 
     def round(self):
 
+        self.won = False
+        self.prevTries = []
+        self.message = ''
+        self.nErrors = 0
         self.chooseWord()
 
         while not self.finnished():
@@ -210,16 +245,19 @@ class Ahorcado:
         Imprime la interfaz de usuario con el estado actual del juego
         por la terminal
         '''
-        print('\n' * 10)
+        print('\n' * 30)
         print(str(self))
         if self.message:
             print(' >', self.message)
             self.message = ''
 
     def input(self):
-        self.userInput = input(' > Introduce otra letra: ').strip().lower()
+        self.userInput = input('\n > Introduce otra letra: ').strip().lower()
 
     def update(self):
+
+        # Comprobaciones
+        self.userInput = self.userInput.strip()
 
         if not self.userInput:
             self.message = ''
@@ -229,12 +267,44 @@ class Ahorcado:
             self.message = Ahorcado.HELP_MSG
             return
 
-        if self.userInput is Ahorcado.EXIT_CMDS:
+        if self.userInput in Ahorcado.EXIT_CMDS:
             self.message = 'Saliendo del juego'
             self.userExit = True
             return
 
-        ...
+        if len(self.userInput) > 1:
+            self.message = 'Introduce las letras de una en una'
+            return
+
+        letter = self.userInput.lower()
+
+        if letter in self.prevTries:
+            self.message = f'Ya habías intentado la letra "{letter}"'
+            return
+
+        self.prevTries.append(letter)
+
+        # Logica
+        if letter in self.word:
+            self.mask = [
+                m or letter == wl  # Las previas y las nuevas coincidencias
+                for m, wl in zip(self.mask, self.word)]
+            self.message = f'¡Acierto! La letra "{letter}" está en la palabra'
+
+        else:
+            self.nErrors += 1
+            self.message = f'Fallo: La letra "{letter}" no está en la palabra'
+
+        if self.nErrors >= Ahorcado.MAX_ERRORS:
+            self.message += (
+                '. Has agotado el numero de intentos. '
+                f'La palabra era "{self.word}"')
+            return
+
+        if all(self.mask):
+            self.won = True
+            self.message += (
+                f'. Palabra "{self.word}" completada ¡Ganaste la ronda!')
 
     def help():
         print(' >', Ahorcado.HELP_MSG)
@@ -252,16 +322,17 @@ class Ahorcado:
             for char, n in zip(
                 Ahorcado.BODY_PIECES, Ahorcado.BODY_PIECES_PRINT_ORDER)])
 
-        display = Ahorcado.TEMPLATE.format(*body)
-
-        # Letras ya probadas
-        prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTries)
-        nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
         maskedWord = '\t' + ''.join([
             (char if present else '_')
             for char, present in zip(self.word, self.mask)])
 
-        return '\n'.join((display, prevLetters, nErrorsStr, maskedWord))
+        display = Ahorcado.TEMPLATE.format(*body) + maskedWord + '\n'
+
+        # Letras ya probadas
+        prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTries)
+        nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
+
+        return '\n'.join((display, prevLetters, nErrorsStr))
 
     def __repr__(self) -> str:
         return (
@@ -271,9 +342,4 @@ class Ahorcado:
 
 if __name__ == '__main__':
     a = Ahorcado('./words.csv')
-    a.mask = [bool(i % 2) for i in range(len(a.word))]
-
-    a.show()
-    print([a])
-
-    Ahorcado.help()
+    a.gameloop()
