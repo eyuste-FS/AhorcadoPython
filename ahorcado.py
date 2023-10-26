@@ -1,5 +1,5 @@
 
-from typing import List
+from typing import List, Optional, Set
 import logging
 from random import choice
 from os.path import isfile
@@ -13,6 +13,15 @@ logger = logging.getLogger(__name__)
 
 class Ahorcado:
 
+    nErrors: int
+
+    word: str
+    mask: List[bool]
+
+    prevTries: Set[str]
+
+    won: bool
+
     TEMPLATE = (
         "\t┌──────┐      \n"
         "\t│      {}     \n"
@@ -25,10 +34,11 @@ class Ahorcado:
     BODY_PIECES = 'O─│─/\\'
     BODY_PIECES_PRINT_ORDER = (0, 2, 1, 3, 4, 5)
 
-    def chooseWordFromFile(filename: str) -> str:
+    WORD_MIN_LEN = 5
+
+    def readWordsFromFile(filename: str) -> List[str]:
         '''
-        Lee un fichero .csv y elige una palabra aleatoria de entre
-        las que contenga.
+        Lee y filtra las palabras de un fichero .csv
 
         Args:
             - filename (str): Path al fichero .csv
@@ -51,27 +61,77 @@ class Ahorcado:
         with open(filename, mode='r', encoding='utf-8') as file:
             lines = file.readlines()
 
-        line = choice(lines)
+        words = [  # Primera columna, por si hubiera mas de una
+            line[:line.index(',')] if ',' in line else line
+            for line in lines]
 
-        # Primera columna, por si hubiera mas de una
-        word = line[:line.index(',')] if ',' in line else line
-        word = word.strip()
+        # Espacios sobrantes a izquierda y minusculas
+        words = [w.lstrip().lower() for w in words]
 
-        # Primera palabra, por si hubiera mas de una
-        word = line[:line.index(' ')] if ' ' in line else line
+        words = [  # Primera palabra, por si hubiera mas de una
+            word[:word.index(' ')] if ' ' in word else words
+            for word in words]
 
-        return word.lower()
+        return [w for w in words if len(w) >= Ahorcado.WORD_MIN_LEN]
 
-    def __init__(self, filename: str) -> None:
+    def chooseWordFromFile(filename: str) -> str:
+        '''
+        Lee un fichero .csv y elige una palabra aleatoria de entre
+        las que contenga.
 
-        self.nErrors: int = 0
+        Args:
+            - filename (str): Path al fichero .csv
 
-        self.word: str = Ahorcado.chooseWordFromFile(filename)
-        self.mask: List[bool] = [False] * len(self.word)
+        Returns:
+            - str: Palabra escogida
+
+        Raises:
+            - FileNotFoundError: si no se encuentra el fichero
+            - ValueError: si el formato del fichero no es correcto o no hay
+            ninguna palabra
+        '''
+        words = Ahorcado.readWordsFromFile(filename)
+
+        if not words:
+            raise ValueError(
+                f'No se ha encontrado ninguna palbra en el fichero {filename}')
+
+        return choice(words)
+
+    def __init__(
+            self, filename: Optional[str] = None,
+            wordList: Optional[List[str]] = None) -> None:
+        '''
+        Inicializa el objeto Ahorcado(). Al menos uno de los argumentos
+        'filename', 'wordList' debe estar presente. En caso de estar ambos,
+        'filename' tiene prioridad y se ignora 'wordList'.
+
+        Args:
+            - filename: Path al fichero del que extraer la palabra
+            - wordList: Listado de palabras del que escoger
+
+        Raises:
+            - ValueError: Si ambos argumentos están ausentes o si el formato
+            del fichero no es correcto
+            - FileNotFoundError: si no se encuentra el fichero
+        '''
+
+        self.nErrors = 0
+
+        if filename is not None:
+            self.word = Ahorcado.chooseWordFromFile(filename)
+        elif wordList is not None:
+            self.word = choice(wordList)
+        else:
+            raise ValueError(
+                'Al menos uno de los argumentos (filename, wordList) '
+                'debe estar presente')
+
+        self.mask = [False] * len(self.word)
 
         self.prevTries = set()
 
-        self.won: bool = False
+        self.won = False
 
     def gameloop(self):
 
