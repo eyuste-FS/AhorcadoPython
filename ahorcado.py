@@ -1,5 +1,5 @@
 
-from typing import List, Optional
+from typing import List
 import logging
 from random import choice
 from os.path import isfile
@@ -22,7 +22,7 @@ class Ahorcado:
     mask: List[bool]
 
     nErrors: int
-    prevTries: List[str]
+    prevTrys: List[str]
 
     won: bool
     puntuacion: int
@@ -68,6 +68,8 @@ class Ahorcado:
         "",
     ))
 
+    MIN_WORDS = 30
+
     def readWordsFromFile(filename: str) -> List[str]:
         '''
         Lee y filtra las palabras de un fichero .csv
@@ -108,9 +110,7 @@ class Ahorcado:
 
         return [w for w in words if len(w) >= Ahorcado.WORD_MIN_LEN]
 
-    def __init__(
-            self, filename: Optional[str] = None,
-            wordList: Optional[List[str]] = None) -> None:
+    def __init__(self) -> None:
         '''
         Inicializa el objeto Ahorcado(). Al menos uno de los argumentos
         'filename', 'wordList' debe estar presente. En caso de estar ambos,
@@ -120,36 +120,14 @@ class Ahorcado:
             - filename: Path al fichero del que extraer la palabra
             - wordList: Listado de palabras del que escoger
 
-        Raises:
-            - ValueError:
-                - Si ambos argumentos están ausentes
-                - Si el formato del fichero no es correcto
-                - Si wordList es una lista vacia
-                - Si la palabra seleccionada tiene longitud = 0
-            - FileNotFoundError:
-                - Si no se encuentra el fichero
         '''
 
-        if filename is not None:
-            wordList = Ahorcado.readWordsFromFile(filename)
-        elif wordList is not None:
-            wordList = [
-                w.lower() for w in wordList
-                if len(w) >= Ahorcado.WORD_MIN_LEN]
-        else:
-            raise ValueError(
-                'Al menos uno de los argumentos (filename, wordList) '
-                'debe estar presente')
-
-        if not wordList:
-            raise ValueError('La lista de palabras está vacia')
-
-        self.wordList = wordList
+        self.wordList = []
 
         self.word = ''
         self.mask = []
 
-        self.prevTries = []
+        self.prevTrys = []
 
         self.nErrors = 0
         self.won = False
@@ -161,7 +139,37 @@ class Ahorcado:
         self.userInput = ''
         self.userExit = False
 
+    def load(self, filename: str):
+        '''
+        Obtiene las palabras de un fichero, realiza comprobaciones y
+        las carga en el juego.
+
+        Args:
+            - filename (str): Path al fichero .csv
+
+        Raises:
+            - FileNotFoundError:
+                - Si no se encuentra el fichero
+            - ValueError:
+                - Si el formato del fichero no es correcto
+        '''
+
+        words = Ahorcado.readWordsFromFile(filename)
+
+        if len(words) < Ahorcado.MIN_WORDS:
+            print(
+                ' > Vaya, parece que no encontramos todas las palabras '
+                'necesarias, no podemos dar comienzo al juego')
+
+            return
+
+        self.wordList = words
+
     def gameloop(self):
+
+        if not self.wordList:
+            print(' > Deben cargarse antes las palabras')
+            return
 
         Ahorcado.help()
 
@@ -173,11 +181,9 @@ class Ahorcado:
                 if self.userExit:
                     break
 
+                self.show()
                 if self.won:
                     self.puntuacion += 1
-                    print('\n > ', self.message)
-                elif not self.userExit and self.nErrors >= Ahorcado.MAX_ERRORS:
-                    print('\n > ', self.message)
 
                 if round < Ahorcado.TOTAL_ROUNDS:
                     input(
@@ -219,7 +225,7 @@ class Ahorcado:
     def round(self):
 
         self.won = False
-        self.prevTries = []
+        self.prevTrys = []
         self.message = ''
         self.nErrors = 0
         self.chooseWord()
@@ -278,11 +284,11 @@ class Ahorcado:
 
         letter = self.userInput.lower()
 
-        if letter in self.prevTries:
+        if letter in self.prevTrys:
             self.message = f'Ya habías intentado la letra "{letter}"'
             return
 
-        self.prevTries.append(letter)
+        self.prevTrys.append(letter)
 
         # Logica
         if letter in self.word:
@@ -329,7 +335,7 @@ class Ahorcado:
         display = Ahorcado.TEMPLATE.format(*body) + maskedWord + '\n'
 
         # Letras ya probadas
-        prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTries)
+        prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTrys)
         nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
 
         return '\n'.join((display, prevLetters, nErrorsStr))
@@ -337,9 +343,4 @@ class Ahorcado:
     def __repr__(self) -> str:
         return (
             f'{self.__class__.__name__}({self.word=}, {self.nErrors=}, '
-            f'{self.won=}, {self.prevTries=})')
-
-
-if __name__ == '__main__':
-    a = Ahorcado('./words.csv')
-    a.gameloop()
+            f'{self.won=}, {self.prevTrys=})')
