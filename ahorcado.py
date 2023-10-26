@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class Ahorcado:
 
     username: str
+    userInput: str
     message: str
 
     word: str
@@ -23,8 +24,7 @@ class Ahorcado:
     prevTries: Set[str]
 
     won: bool
-
-    userInput: str
+    userExit: bool
 
     TEMPLATE = (
         "\t┌──────┐      \n"
@@ -43,6 +43,24 @@ class Ahorcado:
     TOTAL_ROUNDS = 3
 
     MAX_ERRORS = 6
+
+    EXIT_CMDS = {'exit', 'end', 'salir'}
+
+    HELP_CMDS = {'help', 'ayuda'}
+    HELP_MSG = '\n >   '.join((
+        "Help:",
+        "Introduce una letra a la vez para comprobar si está en la palabra.",
+        f"Las palabras posibles tienen al menos {WORD_MIN_LEN} letras y "
+        "están validadas por la RAE",
+        f"Hay {TOTAL_ROUNDS} rondas. Cada ronda acaba al acertar la palabra",
+        f"o al tener {MAX_ERRORS} fallos.",
+        "",
+        "Para mostrar este mensaje utiliza:",
+        *(f'\t- {hc}' for hc in HELP_CMDS),
+        "",
+        "Para salir utiliza uno de los siguientes comandos:",
+        *(f'\t- {ec}' for ec in EXIT_CMDS),
+    ))
 
     def readWordsFromFile(filename: str) -> List[str]:
         '''
@@ -157,8 +175,8 @@ class Ahorcado:
         self.message = ''
 
         self.username = ''
-
         self.userInput = ''
+        self.userExit = False
 
     def gameloop(self):
 
@@ -195,7 +213,7 @@ class Ahorcado:
             self.update()
 
     def finnished(self) -> bool:
-        return self.won or self.nErrors >= Ahorcado.MAX_ERRORS
+        return self.won or self.nErrors >= Ahorcado.MAX_ERRORS or self.userExit
 
     def show(self):
         '''
@@ -209,7 +227,27 @@ class Ahorcado:
             self.message = ''
 
     def input(self):
-        self.userInput = input(' > Introduce otra letra: ')
+        self.userInput = input(' > Introduce otra letra: ').strip().lower()
+
+    def update(self):
+
+        if not self.userInput:
+            self.message = ''
+            return
+
+        if self.userInput in Ahorcado.HELP_CMDS:
+            self.message = Ahorcado.HELP_MSG
+            return
+
+        if self.userInput is Ahorcado.EXIT_CMDS:
+            self.message = 'Saliendo del juego'
+            self.userExit = True
+            return
+
+        ...
+
+    def help():
+        print(' >', Ahorcado.HELP_MSG)
 
     def __str__(self) -> str:
 
@@ -247,3 +285,5 @@ if __name__ == '__main__':
 
     a.show()
     print([a])
+
+    Ahorcado.help()
