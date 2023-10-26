@@ -38,6 +38,8 @@ class Ahorcado:
 
     WORD_MIN_LEN = 5
 
+    TOTAL_ROUNDS = 3
+
     def readWordsFromFile(filename: str) -> List[str]:
         '''
         Lee y filtra las palabras de un fichero .csv
@@ -154,6 +156,13 @@ class Ahorcado:
 
     def gameloop(self):
 
+        self.login()
+
+        for _ in range(Ahorcado.TOTAL_ROUNDS):
+            self.round()
+
+    def round(self):
+
         while not self.finnished():
 
             # Show
@@ -178,7 +187,6 @@ class Ahorcado:
                     'al menos una letra')
 
         self.username = uname
-
 
     def show(self):
         '''
