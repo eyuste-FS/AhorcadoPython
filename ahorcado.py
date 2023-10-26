@@ -2,6 +2,7 @@
 from typing import List
 import logging
 from random import choice
+from os.path import isfile
 
 
 logging.basicConfig(
@@ -40,9 +41,26 @@ class Ahorcado:
             - ValueError: si el formato del fichero no es correcto
         '''
 
-        words = ...  # Readfile
+        if not filename.endswith('.csv'):
+            raise ValueError('El fichero de palabras debe ser .csv')
 
-        return choice(words)
+        if not isfile(filename):
+            raise FileNotFoundError(
+                f'No se ha encontrado el fichero {filename}')
+
+        with open(filename, mode='r', encoding='utf-8') as file:
+            lines = file.readlines()
+
+        line = choice(lines)
+
+        # Primera columna, por si hubiera mas de una
+        word = line[:line.index(',')] if ',' in line else line
+        word = word.strip()
+
+        # Primera palabra, por si hubiera mas de una
+        word = line[:line.index(' ')] if ' ' in line else line
+
+        return word.lower()
 
     def __init__(self, filename: str) -> None:
 
