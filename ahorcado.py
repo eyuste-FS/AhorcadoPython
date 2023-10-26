@@ -24,6 +24,8 @@ class Ahorcado:
 
     won: bool
 
+    userInput: str
+
     TEMPLATE = (
         "\t┌──────┐      \n"
         "\t│      {}     \n"
@@ -39,6 +41,8 @@ class Ahorcado:
     WORD_MIN_LEN = 5
 
     TOTAL_ROUNDS = 3
+
+    MAX_ERRORS = 6
 
     def readWordsFromFile(filename: str) -> List[str]:
         '''
@@ -154,32 +158,24 @@ class Ahorcado:
 
         self.username = ''
 
+        self.userInput = ''
+
     def gameloop(self):
 
-        self.login()
+        try:
+            self.login()
 
-        for _ in range(Ahorcado.TOTAL_ROUNDS):
-            self.round()
-
-    def round(self):
-
-        while not self.finnished():
-
-            # Show
-            self.show()
-
-            # Input
-            userInput = self.input()
-
-            # Update
-            self.update(userInput)
+            for _ in range(Ahorcado.TOTAL_ROUNDS):
+                self.round()
+        except KeyboardInterrupt:
+            print(' > Partida finalizada')
 
     def login(self):
 
         uname = ''
 
         while not uname:
-            uname = input(' > Introduce tu nombre de usuario')
+            uname = input(' > Introduce tu nombre de usuario: ')
 
             if not uname:
                 print(
@@ -187,6 +183,19 @@ class Ahorcado:
                     'al menos una letra')
 
         self.username = uname
+
+    def round(self):
+
+        while not self.finnished():
+
+            self.show()
+
+            self.input()
+
+            self.update()
+
+    def finnished(self) -> bool:
+        return self.won or self.nErrors >= Ahorcado.MAX_ERRORS
 
     def show(self):
         '''
@@ -198,6 +207,9 @@ class Ahorcado:
         if self.message:
             print(' >', self.message)
             self.message = ''
+
+    def input(self):
+        self.userInput = input(' > Introduce otra letra: ')
 
     def __str__(self) -> str:
 
@@ -216,7 +228,7 @@ class Ahorcado:
 
         # Letras ya probadas
         prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTries)
-        nErrorsStr = f'\tFallos: {self.nErrors} / 6'
+        nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
         maskedWord = '\t' + ''.join([
             (char if present else '_')
             for char, present in zip(self.word, self.mask)])
