@@ -14,12 +14,12 @@ logger = logging.getLogger(__name__)
 class Ahorcado:
 
     TEMPLATE = (
-        "┌──────┐      \n"
-        "│      {}     \n"
-        "│     {}{}{}  \n"
-        "│     {} {}   \n"
-        "│             \n"
-        "┴──────────   \n")
+        "\t┌──────┐      \n"
+        "\t│      {}     \n"
+        "\t│     {}{}{}  \n"
+        "\t│     {} {}   \n"
+        "\t│             \n"
+        "\t┴──────────   \n")
 
     # Cabeza, BrazoI, Torso, BrazoD, PiernaI, PiernaD
     BODY_PIECES = 'O─│─/\\'
@@ -69,19 +69,60 @@ class Ahorcado:
         self.word: str = Ahorcado.chooseWordFromFile(filename)
         self.mask: List[bool] = [False] * len(self.word)
 
-    def gameloop(self):
-        ...
+        self.prevTries = set()
 
-    def show(self):
+        self.won: bool = False
+
+    def gameloop(self):
+
+        while not self.finnished():
+
+            # Show
+            self.show()
+
+            # Input
+            userInput = self.input()
+
+            # Update
+            self.update(userInput)
+
+    def __str__(self) -> str:
 
         if len(self.word) != len(self.mask):
-            err = f'show(): {len(self.word)=} != {len(self.mask)=}'
+            err = f'__str__(): {len(self.word)=} != {len(self.mask)=}'
             logger.error(err)
             raise RuntimeError(err)
 
+        # Partes del cuerpo
         body = ''.join([
             (char if n < self.nErrors else ' ')
             for char, n in zip(
                 Ahorcado.BODY_PIECES, Ahorcado.BODY_PIECES_PRINT_ORDER)])
 
-        print(Ahorcado.TEMPLATE.format(*body))
+        display = Ahorcado.TEMPLATE.format(*body)
+
+        # Letras ya probadas
+        prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTries)
+        nErrorsStr = f'\tFallos: {self.nErrors} / 6'
+        maskedWord = '\t' + ''.join([
+            (char if present else '_')
+            for char, present in zip(self.word, self.mask)])
+
+        return '\n'.join((display, prevLetters, nErrorsStr, maskedWord))
+
+    def __repr__(self) -> str:
+        return (
+            f'{self.__class__.__name__}({self.word=}, {self.nErrors=}, '
+            f'{self.won=}, {self.prevTries=})')
+
+    def show(self):
+        print('\n' * 10)
+        print(str(self))
+
+
+if __name__ == '__main__':
+    a = Ahorcado('./words.csv')
+    a.mask = [bool(i % 2) for i in range(len(a.word))]
+
+    a.show()
+    print([a])
