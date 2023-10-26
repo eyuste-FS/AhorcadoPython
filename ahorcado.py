@@ -13,16 +13,16 @@ logger = logging.getLogger(__name__)
 
 class Ahorcado:
 
-    nErrors: int
+    username: str
+    message: str
 
     word: str
     mask: List[bool]
 
+    nErrors: int
     prevTries: Set[str]
 
     won: bool
-
-    message: str
 
     TEMPLATE = (
         "\t┌──────┐      \n"
@@ -150,6 +150,8 @@ class Ahorcado:
 
         self.message = ''
 
+        self.username = ''
+
     def gameloop(self):
 
         while not self.finnished():
@@ -162,6 +164,21 @@ class Ahorcado:
 
             # Update
             self.update(userInput)
+
+    def login(self):
+
+        uname = ''
+
+        while not uname:
+            uname = input(' > Introduce tu nombre de usuario')
+
+            if not uname:
+                print(
+                    ' > El nombre de usuario debe contener '
+                    'al menos una letra')
+
+        self.username = uname
+
 
     def show(self):
         '''
