@@ -46,8 +46,6 @@ class Ahorcado:
 
     TOTAL_ROUNDS = 3
 
-    MAX_ERRORS = 6
-
     EXIT_CMDS = {'exit', 'end', 'salir'}
 
     HELP_CMDS = {'help', 'ayuda'}
@@ -58,7 +56,7 @@ class Ahorcado:
         f"Las palabras posibles tienen al menos {WORD_MIN_LEN} letras y "
         "están validadas por la RAE",
         f"Hay {TOTAL_ROUNDS} rondas. Cada ronda acaba al acertar la palabra",
-        f"o al tener {MAX_ERRORS} fallos.",
+        "o al tener un número de fallos igual a la longitud de la palabra.",
         "",
         "Para mostrar este mensaje utiliza:",
         *(f'\t- {hc}' for hc in HELP_CMDS),
@@ -244,7 +242,7 @@ class Ahorcado:
         self.mask = [False] * len(self.word)
 
     def finnished(self) -> bool:
-        return self.won or self.nErrors >= Ahorcado.MAX_ERRORS or self.userExit
+        return self.won or self.nErrors >= len(self.word) or self.userExit
 
     def show(self):
         '''
@@ -301,7 +299,7 @@ class Ahorcado:
             self.nErrors += 1
             self.message = f'Fallo: La letra "{letter}" no está en la palabra'
 
-        if self.nErrors >= Ahorcado.MAX_ERRORS:
+        if self.nErrors >= len(self.word):
             self.message += (
                 '. Has agotado el numero de intentos. '
                 f'La palabra era "{self.word}"')
@@ -323,8 +321,9 @@ class Ahorcado:
             raise RuntimeError(err)
 
         # Partes del cuerpo
+        errorProp = self.nErrors * len(Ahorcado.BODY_PIECES) / len(self.word)
         body = ''.join([
-            (char if n < self.nErrors else ' ')
+            (char if n < errorProp else ' ')
             for char, n in zip(
                 Ahorcado.BODY_PIECES, Ahorcado.BODY_PIECES_PRINT_ORDER)])
 
@@ -336,7 +335,7 @@ class Ahorcado:
 
         # Letras ya probadas
         prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTrys)
-        nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
+        nErrorsStr = f'\tFallos: {self.nErrors} / {len(self.word)}'
 
         return '\n'.join((display, prevLetters, nErrorsStr))
 
