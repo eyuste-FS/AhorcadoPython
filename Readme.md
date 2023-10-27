@@ -41,3 +41,4 @@ Para la ejecución del juego no se usan bibiotecas externas, exclusivamente las 
 
 Sin embargo para ```hangman.ipynb``` se utiliza:
 - pandas 2.0.3
+- matplotlib 3.7.3
