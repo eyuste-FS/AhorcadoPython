@@ -4,6 +4,8 @@ import logging
 from random import choice
 from os.path import isfile
 
+from registro import RegistroAhorcado
+
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -25,7 +27,7 @@ class Ahorcado:
     prevTrys: List[str]
 
     won: bool
-    puntuacion: int
+    score: int
     userExit: bool
 
     TEMPLATE = '\n\t'.join((
@@ -41,6 +43,8 @@ class Ahorcado:
     # Cabeza, BrazoI, Torso, BrazoD, PiernaI, PiernaD
     BODY_PIECES = 'O─│─/\\'
     BODY_PIECES_PRINT_ORDER = (0, 2, 1, 3, 4, 5)
+
+    MAX_ERRORS = len(BODY_PIECES)
 
     WORD_MIN_LEN = 5
 
@@ -129,13 +133,15 @@ class Ahorcado:
 
         self.nErrors = 0
         self.won = False
-        self.puntuacion = 0
+        self.score = 0
 
         self.message = ''
 
         self.username = ''
         self.userInput = ''
         self.userExit = False
+
+        self.registry = None
 
     def load(self, filename: str):
         '''
@@ -173,7 +179,13 @@ class Ahorcado:
 
         try:
             self.login()
+        except KeyboardInterrupt:
+            print(' > Registro de usuario interrumpido')
+            return
 
+        registry = RegistroAhorcado(self.username)
+
+        try:
             for round in range(1, Ahorcado.TOTAL_ROUNDS + 1):
                 self.round()
                 if self.userExit:
@@ -181,30 +193,36 @@ class Ahorcado:
 
                 self.show()
                 if self.won:
-                    self.puntuacion += 1
+                    self.score += 1
+
+                registry.storeRound(self.word, len(self.prevTrys), self.won)
 
                 if round < Ahorcado.TOTAL_ROUNDS:
                     input(
                         f'\n > Pulsa ENTER para pasar a la {round + 1}º ronda')
 
         except KeyboardInterrupt:
-            print(' > Partida finalizada')
+            print(' > Partida finalizada por el usuario')
+            return
 
         if self.userExit:
             print(' > Partida finalizada por el usuario ')
-        else:
-            prop = self.puntuacion / Ahorcado.TOTAL_ROUNDS
-            extraMsg = (
-                'Otra vez será'
-                if prop < 0.1 else (
-                    '' if prop < 0.6 else (
-                        '¡Bien hecho!' if prop < 1 else
-                        '¡Puntuación perfecta!')))
+            return
 
-            print(
-                '\n > Puntuación final: '
-                f'{self.puntuacion}/{Ahorcado.TOTAL_ROUNDS}.',
-                extraMsg)
+        registry.store(self.score)
+
+        prop = self.score / Ahorcado.TOTAL_ROUNDS
+        extraMsg = (
+            'Otra vez será'
+            if prop < 0.1 else (
+                '' if prop < 0.6 else (
+                    '¡Bien hecho!' if prop < 1 else
+                    '¡Puntuación perfecta!')))
+
+        print(
+            '\n > Puntuación final: '
+            f'{self.score}/{Ahorcado.TOTAL_ROUNDS}.',
+            extraMsg)
 
     def login(self):
 
@@ -242,7 +260,7 @@ class Ahorcado:
         self.mask = [False] * len(self.word)
 
     def finnished(self) -> bool:
-        return self.won or self.nErrors >= len(self.word) or self.userExit
+        return self.won or self.nErrors >= Ahorcado.MAX_ERRORS or self.userExit
 
     def show(self):
         '''
@@ -299,7 +317,7 @@ class Ahorcado:
             self.nErrors += 1
             self.message = f'Fallo: La letra "{letter}" no está en la palabra'
 
-        if self.nErrors >= len(self.word):
+        if self.nErrors >= Ahorcado.MAX_ERRORS:
             self.message += (
                 '. Has agotado el numero de intentos. '
                 f'La palabra era "{self.word}"')
@@ -321,9 +339,8 @@ class Ahorcado:
             raise RuntimeError(err)
 
         # Partes del cuerpo
-        errorProp = self.nErrors * len(Ahorcado.BODY_PIECES) / len(self.word)
         body = ''.join([
-            (char if n < errorProp else ' ')
+            (char if n < self.nErrors else ' ')
             for char, n in zip(
                 Ahorcado.BODY_PIECES, Ahorcado.BODY_PIECES_PRINT_ORDER)])
 
@@ -335,7 +352,7 @@ class Ahorcado:
 
         # Letras ya probadas
         prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTrys)
-        nErrorsStr = f'\tFallos: {self.nErrors} / {len(self.word)}'
+        nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
 
         return '\n'.join((display, prevLetters, nErrorsStr))
 
