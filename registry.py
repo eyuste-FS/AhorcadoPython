@@ -19,6 +19,10 @@ class HangmanRegistry:
     username: str
     start_date: str
 
+    rounds: List[str]
+
+    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
     GAME_FILE = 'games.csv'
     ROUND_FILE = 'round_in_games.csv'
 
@@ -33,7 +37,8 @@ class HangmanRegistry:
         '''
         self.game_id: str = str(uuid4())
         self.username: str = username
-        self.start_date: str = datetime.now()
+        self.start_date: str = datetime.now().strftime(
+            HangmanRegistry.DATE_FORMAT)
 
         self.rounds: List[Round] = []
 
@@ -49,7 +54,7 @@ class HangmanRegistry:
         Returns:
             Tupla Game creada con la información de la partida.
         '''
-        end_date: str = datetime.now()
+        end_date: str = datetime.now().strftime(HangmanRegistry.DATE_FORMAT)
         return Game(
             self.game_id, self.username,
             self.start_date, end_date, final_score)
