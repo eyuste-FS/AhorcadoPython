@@ -4,7 +4,7 @@ import logging
 from random import choice
 from os.path import isfile
 
-from registro import RegistroAhorcado
+from registry import HangmanRegistry
 
 
 logging.basicConfig(
@@ -13,7 +13,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class Ahorcado:
+class Hangman:
 
     username: str
     userInput: str
@@ -110,11 +110,11 @@ class Ahorcado:
             word[:word.index(' ')] if ' ' in word else word
             for word in words]
 
-        return [w for w in words if len(w) >= Ahorcado.WORD_MIN_LEN]
+        return [w for w in words if len(w) >= Hangman.WORD_MIN_LEN]
 
     def __init__(self) -> None:
         '''
-        Inicializa el objeto Ahorcado(). Al menos uno de los argumentos
+        Inicializa el objeto Hangman(). Al menos uno de los argumentos
         'filename', 'wordList' debe estar presente. En caso de estar ambos,
         'filename' tiene prioridad y se ignora 'wordList'.
 
@@ -158,9 +158,9 @@ class Ahorcado:
                 - Si el formato del fichero no es correcto
         '''
 
-        words = Ahorcado.readWordsFromFile(filename)
+        words = Hangman.readWordsFromFile(filename)
 
-        if len(words) < Ahorcado.MIN_WORDS:
+        if len(words) < Hangman.MIN_WORDS:
             print(
                 ' > Vaya, parece que no encontramos todas las palabras '
                 'necesarias, no podemos dar comienzo al juego')
@@ -175,7 +175,7 @@ class Ahorcado:
             print(' > Deben cargarse antes las palabras')
             return
 
-        Ahorcado.help()
+        Hangman.help()
 
         try:
             self.login()
@@ -183,10 +183,10 @@ class Ahorcado:
             print(' > Registro de usuario interrumpido')
             return
 
-        registry = RegistroAhorcado(self.username)
+        registry = HangmanRegistry(self.username)
 
         try:
-            for round in range(1, Ahorcado.TOTAL_ROUNDS + 1):
+            for round in range(1, Hangman.TOTAL_ROUNDS + 1):
                 self.round()
                 if self.userExit:
                     break
@@ -197,7 +197,7 @@ class Ahorcado:
 
                 registry.storeRound(self.word, len(self.prevTrys), self.won)
 
-                if round < Ahorcado.TOTAL_ROUNDS:
+                if round < Hangman.TOTAL_ROUNDS:
                     input(
                         f'\n > Pulsa ENTER para pasar a la {round + 1}º ronda')
 
@@ -211,7 +211,7 @@ class Ahorcado:
 
         registry.store(self.score)
 
-        prop = self.score / Ahorcado.TOTAL_ROUNDS
+        prop = self.score / Hangman.TOTAL_ROUNDS
         extraMsg = (
             'Otra vez será'
             if prop < 0.1 else (
@@ -221,7 +221,7 @@ class Ahorcado:
 
         print(
             '\n > Puntuación final: '
-            f'{self.score}/{Ahorcado.TOTAL_ROUNDS}.',
+            f'{self.score}/{Hangman.TOTAL_ROUNDS}.',
             extraMsg)
 
     def login(self):
@@ -260,7 +260,7 @@ class Ahorcado:
         self.mask = [False] * len(self.word)
 
     def finnished(self) -> bool:
-        return self.won or self.nErrors >= Ahorcado.MAX_ERRORS or self.userExit
+        return self.won or self.nErrors >= Hangman.MAX_ERRORS or self.userExit
 
     def show(self):
         '''
@@ -285,11 +285,11 @@ class Ahorcado:
             self.message = ''
             return
 
-        if self.userInput in Ahorcado.HELP_CMDS:
-            self.message = Ahorcado.HELP_MSG
+        if self.userInput in Hangman.HELP_CMDS:
+            self.message = Hangman.HELP_MSG
             return
 
-        if self.userInput in Ahorcado.EXIT_CMDS:
+        if self.userInput in Hangman.EXIT_CMDS:
             self.message = 'Saliendo del juego'
             self.userExit = True
             return
@@ -317,7 +317,7 @@ class Ahorcado:
             self.nErrors += 1
             self.message = f'Fallo: La letra "{letter}" no está en la palabra'
 
-        if self.nErrors >= Ahorcado.MAX_ERRORS:
+        if self.nErrors >= Hangman.MAX_ERRORS:
             self.message += (
                 '. Has agotado el numero de intentos. '
                 f'La palabra era "{self.word}"')
@@ -329,7 +329,7 @@ class Ahorcado:
                 f'. Palabra "{self.word}" completada ¡Ganaste la ronda!')
 
     def help():
-        print(' >', Ahorcado.HELP_MSG)
+        print(' >', Hangman.HELP_MSG)
 
     def __str__(self) -> str:
 
@@ -342,17 +342,17 @@ class Ahorcado:
         body = ''.join([
             (char if n < self.nErrors else ' ')
             for char, n in zip(
-                Ahorcado.BODY_PIECES, Ahorcado.BODY_PIECES_PRINT_ORDER)])
+                Hangman.BODY_PIECES, Hangman.BODY_PIECES_PRINT_ORDER)])
 
         maskedWord = '\t' + ''.join([
             (char if present else '_')
             for char, present in zip(self.word, self.mask)])
 
-        display = Ahorcado.TEMPLATE.format(*body) + maskedWord + '\n'
+        display = Hangman.TEMPLATE.format(*body) + maskedWord + '\n'
 
         # Letras ya probadas
         prevLetters = '\tIntentos previos: ' + ' '.join(self.prevTrys)
-        nErrorsStr = f'\tFallos: {self.nErrors} / {Ahorcado.MAX_ERRORS}'
+        nErrorsStr = f'\tFallos: {self.nErrors} / {Hangman.MAX_ERRORS}'
 
         return '\n'.join((display, prevLetters, nErrorsStr))
 

@@ -1,5 +1,5 @@
-from ahorcado import Ahorcado
+from hangman import Hangman
 
-game = Ahorcado()
+game = Hangman()
 game.load('./words.csv')
 game.gameloop()

@@ -10,7 +10,7 @@ Game = namedtuple('Game', 'game_id username start_date end_date final_score')
 Round = namedtuple('Round', 'game_id word username round_id user_trys victory')
 
 
-class RegistroAhorcado:
+class HangmanRegistry:
 
     game_id: str
     username: str
@@ -43,10 +43,10 @@ class RegistroAhorcado:
     def store(self, final_score: int):
         game = self.__getGame(final_score)
 
-        create = not isfile(RegistroAhorcado.GAME_FILE)
+        create = not isfile(HangmanRegistry.GAME_FILE)
         # Guardar en GAME_FILE
-        with open(RegistroAhorcado.GAME_FILE, 'a') as file:
-            if create or not getsize(RegistroAhorcado.GAME_FILE):
+        with open(HangmanRegistry.GAME_FILE, 'a') as file:
+            if create or not getsize(HangmanRegistry.GAME_FILE):
                 file.write(
                     'game_id,username,start_date,end_date,final_score\n')
 
@@ -55,10 +55,10 @@ class RegistroAhorcado:
                 game.start_date, game.end_date, game.final_score))) + '\n'
             file.write(row)
 
-        create = not isfile(RegistroAhorcado.ROUND_FILE)
+        create = not isfile(HangmanRegistry.ROUND_FILE)
         # Guardar en ROUND_FILE
-        with open(RegistroAhorcado.ROUND_FILE, 'a') as file:
-            if create or not getsize(RegistroAhorcado.ROUND_FILE):
+        with open(HangmanRegistry.ROUND_FILE, 'a') as file:
+            if create or not getsize(HangmanRegistry.ROUND_FILE):
                 file.write(
                     'game_id,word,username,round_id,user_trys,victory\n')
 
