@@ -104,9 +104,9 @@ class HangmanRegistry:
                 file.write(
                     'game_id,username,start_date,end_date,final_score\n')
 
-            row = ','.join((str(d) for d in (
+            row = '"{}","{}","{}","{}",{}\n'.format(
                 game.game_id, game.username,
-                game.start_date, game.end_date, game.final_score))) + '\n'
+                game.start_date, game.end_date, game.final_score)
             file.write(row)
 
         create = not isfile(HangmanRegistry.ROUND_FILE)
@@ -117,7 +117,7 @@ class HangmanRegistry:
                     'game_id,word,username,round_id,user_trys,victory\n')
 
             for round in self.rounds:
-                row = ','.join((str(d) for d in (
+                row = '"{}","{}","{}","{}",{},{}\n'.format(
                     round.game_id, round.word, round.username,
-                    round.round_id, round.user_trys, round.victory))) + '\n'
+                    round.round_id, round.user_trys, round.victory)
                 file.write(row)
