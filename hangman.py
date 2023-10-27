@@ -57,7 +57,7 @@ class Hangman:
         f"Las palabras posibles tienen al menos {WORD_MIN_LEN} letras y "
         "están validadas por la RAE",
         f"Hay {TOTAL_ROUNDS} rondas. Cada ronda acaba al acertar la palabra",
-        "o al tener un número de fallos igual a la longitud de la palabra.",
+        f"o al tener {MAX_ERRORS} fallos.",
         "",
         "Para mostrar este mensaje utiliza:",
         *(f'\t- {hc}' for hc in HELP_CMDS),
