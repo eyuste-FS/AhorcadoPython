@@ -1,16 +1,13 @@
+'''
+Este módulo define la clase Hangman, que gestiona las partidas y rondas del
+juego, y de su registro.
+'''
 
 from typing import List
-import logging
 from random import choice
 from os.path import isfile
 
 from registry import HangmanRegistry
-
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(name)s - %(levelname)s - %(message)s',)
-logger = logging.getLogger(__name__)
 
 
 class Hangman:
@@ -141,8 +138,6 @@ class Hangman:
         self.userInput = ''
         self.userExit = False
 
-        self.registry = None
-
     def load(self, filename: str):
         '''
         Obtiene las palabras de un fichero, realiza comprobaciones y
@@ -170,6 +165,12 @@ class Hangman:
         self.wordList = words
 
     def gameloop(self):
+        '''
+        Ejecuta el bucle del juego, todas las rondas de una partida.
+        Al finalizar, guarda en un registro la partida y las rondas.
+        Si el usuario finaliza una partida a medias, no se guarda el
+        registro.
+        '''
 
         if not self.wordList:
             print(' > Deben cargarse antes las palabras')
@@ -185,9 +186,11 @@ class Hangman:
 
         registry = HangmanRegistry(self.username)
 
+        usedWords = []
         try:
             for round in range(1, Hangman.TOTAL_ROUNDS + 1):
                 self.round()
+                usedWords.append(self.word)
                 if self.userExit:
                     break
 
@@ -204,19 +207,23 @@ class Hangman:
         except KeyboardInterrupt:
             print(' > Partida finalizada por el usuario')
             return
+        finally:
+            # Recuperamos las palabras para que puedan ser usadas
+            # en una nueva partida
+            self.wordList.extend(usedWords)
 
         if self.userExit:
-            print(' > Partida finalizada por el usuario ')
+            print(' > Partida finalizada por el usuario')
             return
 
         registry.store(self.score)
 
-        prop = self.score / Hangman.TOTAL_ROUNDS
+        winProp = self.score / Hangman.TOTAL_ROUNDS
         extraMsg = (
             'Otra vez será'
-            if prop < 0.1 else (
-                '' if prop < 0.6 else (
-                    '¡Bien hecho!' if prop < 1 else
+            if winProp < 0.1 else (
+                '' if winProp < 0.6 else (
+                    '¡Bien hecho!' if winProp < 1 else
                     '¡Puntuación perfecta!')))
 
         print(
@@ -225,6 +232,9 @@ class Hangman:
             extraMsg)
 
     def login(self):
+        '''
+        Pide y registra el nombre de usuario.
+        '''
 
         uname = ''
 
@@ -239,6 +249,10 @@ class Hangman:
         self.username = uname
 
     def round(self):
+        '''
+        Ejecuta el bucle de una ronda.
+        Elige una palabra que no se haya usado ya en la partida.
+        '''
 
         self.won = False
         self.prevTrys = []
@@ -255,11 +269,15 @@ class Hangman:
             self.update()
 
     def chooseWord(self):
+        '''
+        Extrae una palabra de la lista y prepara su máscara.
+        '''
         self.word = choice(self.wordList)
         self.wordList.remove(self.word)  # Para evitar repeticiones
         self.mask = [False] * len(self.word)
 
     def finnished(self) -> bool:
+        '''Comprueba las condiciones de finalización de una ronda'''
         return self.won or self.nErrors >= Hangman.MAX_ERRORS or self.userExit
 
     def show(self):
@@ -274,13 +292,23 @@ class Hangman:
             self.message = ''
 
     def input(self):
-        self.userInput = input('\n > Introduce otra letra: ').strip().lower()
+        '''Recibe y prepara la entrada de usuario'''
+        other = 'otra' if len(self.prevTrys) else 'una'
+        self.userInput = input(
+            f'\n > Introduce {other} letra: ').strip().lower()
 
     def update(self):
+        '''
+        Actualiza el estado del juego:
+        - Procesa la entrada del usuario, comprueba los comandos de ayuda y
+        salida, comprueba que la entrada sea válida.
+        - Si la letra está en la palabra, actualiza la máscara. En caso
+        contrario, apunta un fallo.
+        - Comprueba las condiciones de finalización: máximo número de fallos
+        o palabra completada.
+        '''
 
         # Comprobaciones
-        self.userInput = self.userInput.strip()
-
         if not self.userInput:
             self.message = ''
             return
@@ -309,8 +337,8 @@ class Hangman:
         # Logica
         if letter in self.word:
             self.mask = [
-                m or letter == wl  # Las previas y las nuevas coincidencias
-                for m, wl in zip(self.mask, self.word)]
+                prev or letter == wl  # Las coincidencias nuevas y anteriores
+                for prev, wl in zip(self.mask, self.word)]
             self.message = f'¡Acierto! La letra "{letter}" está en la palabra'
 
         else:
@@ -329,13 +357,13 @@ class Hangman:
                 f'. Palabra "{self.word}" completada ¡Ganaste la ronda!')
 
     def help():
+        '''Imprime un mensaje de ayuda'''
         print(' >', Hangman.HELP_MSG)
 
     def __str__(self) -> str:
 
         if len(self.word) != len(self.mask):
             err = f'__str__(): {len(self.word)=} != {len(self.mask)=}'
-            logger.error(err)
             raise RuntimeError(err)
 
         # Partes del cuerpo
