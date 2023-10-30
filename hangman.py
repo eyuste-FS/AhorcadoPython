@@ -110,7 +110,6 @@ class Hangman:
             word[:word.index(' ')] if ' ' in word else word
             for word in words]
 
-        print(words)
         return [w for w in words if len(w) >= Hangman.WORD_MIN_LEN]
 
     def __init__(self) -> None:
