@@ -42,19 +42,16 @@ class HangmanRegistry:
 
         self.rounds: List[Round] = []
 
-    def _getGame(self, final_score: int) -> Game:
+    def _getGame(self) -> Game:
         '''
         Crea la tupla Game que contiene toda la información a guardar
         de la partida.
-
-        Args:
-            - final_score: puntuación final de la partida, número de
-            rondas ganadas
 
         Returns:
             Tupla Game creada con la información de la partida.
         '''
         end_date: str = datetime.now().strftime(HangmanRegistry.DATE_FORMAT)
+        final_score = sum((round.victory for round in self.rounds))
         return Game(
             self.game_id, self.username,
             self.start_date, end_date, final_score)
@@ -96,8 +93,7 @@ class HangmanRegistry:
         rondas guardadas en la lista buffer.
         Se usa el formato csv.
         '''
-        final_score = sum((round.victory for round in self.rounds))
-        game = self._getGame(final_score)
+        game = self._getGame()
 
         create = not isfile(HangmanRegistry.GAME_FILE)
         # Guardar en GAME_FILE
