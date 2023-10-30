@@ -216,7 +216,7 @@ class Hangman:
             print(' > Partida finalizada por el usuario')
             return
 
-        registry.store(self.score)
+        registry.store()
 
         winProp = self.score / Hangman.TOTAL_ROUNDS
         extraMsg = (

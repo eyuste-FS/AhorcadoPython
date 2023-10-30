@@ -89,17 +89,14 @@ class HangmanRegistry:
         '''
         self.rounds.append(self._getRound(word, user_trys, victory))
 
-    def store(self, final_score: int):
+    def store(self):
         '''
         Escribe en los ficheros definidos en ```HangmanRegistry.GAME_FILE```
         y ```HangmanRegistry.ROUND_FILE``` los datos de la partida y las
         rondas guardadas en la lista buffer.
         Se usa el formato csv.
-
-        Args:
-            - final_score: puntuación final de la partida, número de
-            rondas ganadas
         '''
+        final_score = sum((round.victory for round in self.rounds))
         game = self._getGame(final_score)
 
         create = not isfile(HangmanRegistry.GAME_FILE)
