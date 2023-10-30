@@ -69,7 +69,7 @@ class Hangman:
 
     MIN_WORDS = 30
 
-    def readWordsFromFile(filename: str) -> List[str]:
+    def readWordsFromCsv(filename: str) -> List[str]:
         '''
         Lee y filtra las palabras de un fichero .csv
 
@@ -96,9 +96,12 @@ class Hangman:
         with open(filename, mode='r', encoding='utf-8') as file:
             lines = file.readlines()
 
-        words = [  # Primera columna, por si hubiera mas de una
+        words = [  # Solo la primera columna, por si hubiera mas de una
             line[:line.index(',')] if ',' in line else line
             for line in lines]
+
+        if words:  # Eliminamos la cabecera
+            words.pop(0)
 
         # Espacios sobrantes a los lados y minusculas
         words = [w.strip().lower() for w in words]
@@ -107,6 +110,7 @@ class Hangman:
             word[:word.index(' ')] if ' ' in word else word
             for word in words]
 
+        print(words)
         return [w for w in words if len(w) >= Hangman.WORD_MIN_LEN]
 
     def __init__(self) -> None:
@@ -153,7 +157,7 @@ class Hangman:
                 - Si el formato del fichero no es correcto
         '''
 
-        words = Hangman.readWordsFromFile(filename)
+        words = Hangman.readWordsFromCsv(filename)
 
         if len(words) < Hangman.MIN_WORDS:
             print(
