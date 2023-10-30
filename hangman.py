@@ -24,7 +24,6 @@ class Hangman:
     prevTrys: List[str]
 
     won: bool
-    score: int
     userExit: bool
 
     TEMPLATE = '\n\t'.join((
@@ -133,7 +132,6 @@ class Hangman:
 
         self.nErrors = 0
         self.won = False
-        self.score = 0
 
         self.message = ''
 
@@ -189,7 +187,9 @@ class Hangman:
 
         registry = HangmanRegistry(self.username)
 
+        score = 0
         usedWords = []
+        self.userExit = False
         try:
             for round in range(1, Hangman.TOTAL_ROUNDS + 1):
                 self.round()
@@ -199,7 +199,7 @@ class Hangman:
 
                 self.show()
                 if self.won:
-                    self.score += 1
+                    score += 1
 
                 registry.storeRound(self.word, len(self.prevTrys), self.won)
 
@@ -221,7 +221,7 @@ class Hangman:
 
         registry.store()
 
-        winProp = self.score / Hangman.TOTAL_ROUNDS
+        winProp = score / Hangman.TOTAL_ROUNDS
         extraMsg = (
             'Otra vez será'
             if winProp < 0.1 else (
@@ -231,7 +231,7 @@ class Hangman:
 
         print(
             '\n > Puntuación final: '
-            f'{self.score}/{Hangman.TOTAL_ROUNDS}.',
+            f'{score}/{Hangman.TOTAL_ROUNDS}.',
             extraMsg)
 
     def login(self):
